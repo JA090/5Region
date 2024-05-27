@@ -1,5 +1,5 @@
-#'# A visualization tool for the design and analysis of trial data. Details of the procedure are in 'A Visualization Tool to Support a Multiple Testing Strategy 
-#'and Encourage Thoughtful Statistical Analyses' by Aisbett, Drinkwater, Quarrie and Woodcock.
+#'# A visualization tool for the design and analysis of trial data. Details of the procedure are in '5x3: A Visualization Tool to Support a Multiple Testing Strategy 
+#'And Encourage Thoughtful Statistical Analyses' by Aisbett, Drinkwater, Quarrie and Woodcock.
 #' The tool uses a multiple testing procedure featuring one-sided t-tests against margins of material significance (i.e., of practically meaningful effect sizes). 
 #' The test rejection regions are simultaneously presented at multiple alpha levels. Optionally, confidence intervals can be presented for data points entered as mean + SE. 
 #' We outline how this tool might be used in the statistical design and analysis phases.  Visualizing graded interpretations of the evidence against a parameter being in 
@@ -25,36 +25,41 @@ miceadds::source.all(".\\R")
 
 
 #'Start up values for potential user-nominated terms of magnitude and test strength
+Labels0=c(expression(paste("inferior (reject ", italic("E \u2265 L)"))), expression(paste("superior (reject ", italic("E \u2264 U)"))),
+    expression(paste("non-superior (reject ", italic("E > U)"))),
+    expression(paste("non-inferior (reject ",italic("E < L)"))),expression(paste("equivalence (reject both ", italic("E > U & E < L)"))), "inconclusive (reject nothing)")
 mmagTerms=paste0("size < L, size > U, size \u2264 U, size \u2265 L, size between L & U")
 mmag2Terms="no test significant"
-levelTerms="p < 0.25, p < .05, p < .001"
-magTermsNC = "negative, positive,  not positive, not negative, trivial"
-magTerms = "harmful, beneficial, non beneficial, non harmful, trivial"
+levelTerms="weaker, stronger, strongest"
+tests0=list(c("test /\u03b1","inf","sup","non-sup","non-inf", "equiv"))
+magTerms = "negative, positive,  not pos., not neg., equiv."
+magTermsC = "harm, benefit, no benefit, no harm, trivial"
 mag2Terms = "unclear"
-mlevelTerms="likely, very likely, most likely"
+levelTerms="likely, very likely, most likely"
 colorvec <<- c("lightblue","dodgerblue","blue", #inferiority
                "darkseagreen", "limegreen","green", #superiority
                "lightgray", "darkgray", "gray35","gray20") # equivalence and inconclusive
 alpss<<-matrix(data=rep(NA,15),nrow=5,ncol=3)
 
 #'Start up values for matrix of test levels and power for the 4 one-sided tests   
-D=c(0.25, "Y","Y","","","Y",0.05, "Y","Y","Y","","Y",0.001, "Y","","Y","Y","Y")
-DP=c(80,80,0,0,80,70,70,80,0,80, 60,0,  70,70,70)
-xmin=-4; xmax=4
-
+D=c(0.25, "*","*","","","",0.05, "*","*","*","*","*",0.005, "*","*","*","*","*")
+DP=rep(0, 15) #c(80,80,0,0,80,70,70,80,0,80, 60,0,  70,70,70)
+xmin0=-3.5;xmax0=2.5;ymin0=0; ymax0=1.5; ymin0SS=10;ymax0SS=1000
 dimnames=list( c("test /\u03b1", "E \u2265 L", "E \u2264 U", "E > U", "E < L", "L \u2264 E \u2264 U"))
-
+dimnames=tests0
 inpAlpha<-matrix(D, nrow=6,ncol=3,dimnames=dimnames)
-inpAlphaSS<-matrix(D, nrow=6,ncol=3,
-                   dimnames=dimnames)
+inpAlphaSS<-matrix(D, nrow=6,ncol=3,dimnames=dimnames)
 inpPower<-matrix(DP, nrow=5,ncol=3,
-                 dimnames=list(c("E \u2265 L", "E \u2264 U", "E > U", "E < L","L \u2264 E \u2264 U"),c("alpha 1", "alpha 2", "alpha 3")))
-
+                 dimnames=list(c("inf","sup","non-sup","non-inf", "equiv"),c("alpha 1", "alpha 2", "alpha 3")))
 #'Start up values for data points if analysis phase     
-dataFile<- "ledewski.txt" #: Rinnella & James -.145,.0725,.8972/ 0.8408329, 0.8408329 ,0.8443933"bartolomei.txt"  # "
-d<-read.csv(dataFile,header=F,sep="\t")
-dataMean="-.145,.0725,.8972" #paste((d[1,]))
-dataSE= " 0.8408329, 0.8408329, 0.8443933" #paste((d[2,]))    
+#dataFile<- "bartolomei.txt" #"ledewski.txt" ###: Rinnella & James -.145,.0725,.8972/ 0.8408329, 0.8408329 ,0.8443933"bartolomei.txt"  # "
+#d<-read.csv(dataFile,header=F,sep="\t")
+#dataMean=paste((d[1,]))
+#dataV= paste((d[2,]))  
+   
+dataMean="-.5,.6,1.2" #paste((d[1,]))
+dataV= " 0.134, 0.19, 0.5" #0.225, 0.451, 3.126" #paste((d[2,])) 
+
 
 #' INTERFACE:
 
@@ -67,7 +72,7 @@ ui <- fluidPage(
                 tags$style("#levelTerms {font-weight: 300;font-size: 12px;font-family: Courier}"),
                 tags$style("#mag2Terms {font-weight: 300;font-size: 12px;font-family: Courier}"),
                 tags$style("#dataMean {font-weight: 300;font-size: 12px;font-family: Courier}"),
-                tags$style("#dataSE {font-weight: 300;font-size: 12px;font-family: Courier}")),
+                tags$style("#dataV {font-weight: 300;font-size: 12px;font-family: Courier}")),
       tags$style("#LUX {font-weight: 300;font-size: 12px;font-family: Courier}"),
       chooseSliderSkin("Modern"),
       tags$style(type="text/css", ".shiny-output-error{visibility: hidden; }",
@@ -75,14 +80,14 @@ ui <- fluidPage(
       
       titlePanel(             
         div(style = "display: flex; flex-wrap: wrap;color:black",
-            h3("Visualization Tool to Support Five-Region Hypothesis Testing"),
+            h3("5x3: A Visualization Tool to Support Five-Region Hypothesis Testing"),
             
         )),
       
-      p(("Tool to explore tests and sample sizes before a study or to explore decisions about effect sizes after data collection.")),
-      p("Given an interval [", em("L, U"), "] that is practically equivalent to zero, the tool considers 5 tests: whether the effect size", em("E")," is
+      p(("A tool to explore tests and sample sizes before a study or to explore decisions about effect sizes after data collection.")),
+      p("Given an interval [", em("L, U"), "] of effect sizes that are not materially significant (equivalent to zero), the tool considers 5 tests: whether the effect size", em("E")," is
                   at least or is less than ", em("L"),", is at most or is more than ", em("U"),", or is between ", em("L")," and ", em("U"),". Tests are at up to 3 alpha levels."),
-      div( fluidRow(column(2, em("Select interval equivalent to 0:")),
+      div( fluidRow(column(2, em("Select interval of effect sizes that are not materially significant:")),
                     column(10,uiOutput("Slider")),
       )),
       
@@ -90,83 +95,32 @@ ui <- fluidPage(
       tabsetPanel(
         id="tab",
         
-      #'Tab for analysis phase
-        tabPanel("Analysis",h5(strong("Plot findings against rejection regions of nominated tests or as confidence intervals.")),
-                 p(" The color behind a finding corresponds to the decision about effect size shown in the legend. Click on chart to get point co-ordinates, plus the standard 95% confidence interval for a finding with
-                                    those co-ordinates. Draw a box in the chart and double click in it to zoom. Double click again to unzoom. Legend is draggable."),
-                 sidebarLayout(
-                   
-           #'Analysis sidebar offers a table to input desired tests and alpha levels. 
-                   sidebarPanel(
-                     width = 3,
-                     strong(" TABLE OF TESTS"),
-                     em(matrixInput("alps",value=inpAlpha,rows=list(names=T),cols=list(names=F))),
-                     p(em("Modify table to suit. Enter Y to conduct test at given alpha level. 
-                      "),  width="400px") ,
+        #'Tab for study parameters and study data. 
+        tabPanel("Study design & data", h5(strong("Set up basic parameters of the study, and enter findings")),br(),
+                 div(style = "flex:1;flex-wrap; color: black",
+                     
+                     #' Can be one or two group design with possibly unequal groups.
+                     em(p("Enter 1 for a single group design or the larger group proportion for a 2 group design.")),
+                     numericInput("Study",label="",width = "100px",value = 0.5,min=.5,max=1,step=.1),
                      br(),
-                     #'Analysis sidebar also allow choice to display confidence intervals at multiple confidence levels about data points entered in Study tab        
-                     checkboxInput("drawCIs",label = h5("Check box to display findings as confidence intervals (CIs)."), value=F,width ="100%"),
-                     p("Studies will be labelled in order of data entry. For each study, CIs corresponding to different test levels are overlaid,
-                      with the longest CI corresponding to the most stringent test. The CI panel is draggable, and will be closed
-                     when the box is unchecked."),
-                   ),
-                   
-                   mainPanel(width=9,
-                             
-          #'Analysis main panel optionally displays a draggable display of confidence intervals 
-                             jqui_draggable(
-                               conditionalPanel(condition = "input.drawCIs == true",plotOutput("CIs"),draggable=TRUE),
-                               option=list(cancel = ".shiny-input-container")),
-          
-          #'Analysis main panel  displays the co-ordinates of a point if the chart is clicked on
-          #'The chart is displayed beneath this, with ability to draw a box and double click to zoom (hence chart is not draggable)
-                             div(style="width: 450px;",verbatimTextOutput("clickss")),
-                             tags$head(tags$style("#'clickss{color:blue;width:200px}")),
-                             tags$head(tags$style("#'Fig{cursor:default}")),
-                             plotOutput("Fig", inline=T,  click = "plot_click", dblclick="plot_dclick1",
-                                        brush=brushOpts(id="brush1", resetOnNew=T)),
-           #'Legend is  a draggable panel
-                             absolutePanel(plotOutput("Legend"),draggable=TRUE,top="510px"),    
-                             
-                   ),
-                 )), 
-        #' End analysis tab.
-        
-    #'Tab for sample size calculation phase
-        tabPanel("Sample size",h5(strong("Estimate minimum sample size to achieve desired power over all nominated tests.")),
-                 p("A vertical line is shown at each estimated effect size. The color behind a point on the line shows the strongest test with sufficient power at that sample size. The legend is draggable."),
-                 p("Draw a box in the chart and double click in it to zoom. Double click again to unzoom. Single click on chart to get co-ordinates.
-              Legend is draggable."),
-                 sidebarLayout(
-                   
-       #'Sample size sidebar offers tables to input desired tests/alpha levels and powers. 
-                   sidebarPanel(
-                     width = 3,
-                     div(style="margin-bottom:0px;flex:1;flex-wrap=wrap;color:black",
-                         strong("TABLE OF TESTS"),
-                         em(matrixInput("alpsS",value=inpAlphaSS,rows=list(names=T),cols=list(names=F))),
-                         p(em("Modify table to suit. Enter Y to conduct this test at this alpha level."), width="400px") ,
-                         br(),
-                         div(style = "flex:1;color:black", em(matrixInput("power",value=inpPower,rows=list(names=T),cols=list(names=F),class="numeric"))),
-                         p(em("For each test, enter desired power at that alpha level.", width="400px")) ),
+                     
+                     #' Sample size (or an estimate if calculating sample size, used in drawing regions)  
+                     em("Enter total trial sample size, or your initial estimate if computing sample size."),
+                     numericInput("sample", label = "",width="100px",value=50,step=10,min=4),
                      br(),
-        
-        #'Sample size sidebar also is where estimated effect size(s) and estimated variance are entered.
-                     textInput("ES", label = h5(paste0("One or more estimates of effect size, comma separated", intToUtf8(8194))),value="-.3,2.0 "),
-                     numericInput("var", label = h5(paste0("Estimated variance.", intToUtf8(8194))), value = 1),
-                   ),
-        #'Sample size main panel is as for analysis phase, without optional CI display.The chart now shows rejection region THAT HAVE DESIRED POWER 
-                   mainPanel(width=9,
-                             div(style="width:350px;color:blue;",verbatimTextOutput("clickss1")),
-                             tags$head(tags$style("#'FigSS{cursor:default}")),
-                             plotOutput("FigSS", inline=T,  click = "plot_click", dblclick="plot_dclick",
-                                        brush=brushOpts(id="brush", resetOnNew=T)),
-                             absolutePanel(plotOutput("Legend1"),draggable=TRUE,top="510px"),
-                   ),
+                     #' Checkbox to enter findings and a conditional panel to use to input.    
+                     checkboxInput("ESES",label = "Check to enter summary data", value=F,width ="100%"),
+                     conditionalPanel(condition = "input.ESES == true",
+                                      h5("Use comma separated format to enter the effect sizes and either standard errors or variances. Your data will be plotted as numbers in the order you entered them."),
+                                      textAreaInput("dataMean", label = "List of effect sizes", value = dataMean),br(),
+                                      fluidRow(column(3,textAreaInput("dataV", label = "List of standard errors or variances", value = dataV)),
+                                               column(1,checkboxInput("VES",label = "Check if variance", value=F,width ="100%")))
+                     ),
                  )), 
-      #' End sample size tab.
+        #'End study set up tab.
         
-      #'Tab for chart display parameters
+        
+         #'Tab for chart display parameters
         tabPanel("Display set up", h5(strong("Set up basic parameters  of the display")),
                  #' Checkbox for B&W display versus color.
                  div(style = "flex:1;flex-wrap; color: black",
@@ -178,59 +132,114 @@ ui <- fluidPage(
                      fluidRow(
                        column(width=2, p(("Range of effect sizes."))),
                        div(style = "flex:1;color:black", 
-                           column(2,numericInput("xmin", label = paste0("smallest", intToUtf8(8194)), value = -4)),
-                           column(2,numericInput("xmax", label = paste0("largest", intToUtf8(8194)), value = 4)),
+                           column(2,numericInput("xmin", label = paste0("smallest", intToUtf8(8194)), value = xmin0)),
+                           column(2,numericInput("xmax", label = paste0("largest", intToUtf8(8194)), value = xmax0)),
                        )),
                      fluidRow(
                        column(width=2,  p(("Range of standard errors.*"))),
                        div(style = "flex:1;color:black", 
-                           column(2,numericInput("ymin", label = paste0("smallest", intToUtf8(8194)), value = 0)),
-                           column(2,numericInput("ymax", label = paste0("largest", intToUtf8(8194)), value = 4)),
+                           column(2,numericInput("ymin", label = paste0("smallest", intToUtf8(8194)), value = ymin0)),
+                           column(2,numericInput("ymax", label = paste0("largest", intToUtf8(8194)), value = ymax0)),
                        )),
                      fluidRow(
                        column(width=2,  p(("Range of total sample sizes.*"))),
                        div(style = "flex:1;color:black", 
-                           column(2,numericInput("yminSS", label = paste0("smallest", intToUtf8(8194)), value = 6)),
-                           column(2,numericInput("ymaxSS", label = paste0("largest", intToUtf8(8194)), value = 100)),
+                           column(2,numericInput("yminSS", label = paste0("smallest", intToUtf8(8194)), value = ymin0SS)),
+                           column(2,numericInput("ymaxSS", label = paste0("largest", intToUtf8(8194)), value = ymax0SS)),
                        )),
                      p("* Enter range of standard errors if doing an analysis, otherwise range of total sample size."),
                      br(),
          
          #' Checkbox to enter terminology, then input boxes for this
                      checkboxInput("newTerms",label = "Check box to enter your own descriptions into the chart legend. Uncheck to restore terms.", value=F,width ="100%"),
-                     p("Use comma separated format, and follow the order of entries suggested in the boxes."),
-                     br(),
-                     div(style = "color:black; font-weight: 300;",
-                         textAreaInput("levelTerms", label = paste0("Your description of your test levels (max. 3)",intToUtf8(8194)),  value = levelTerms,width="200%"),
-                         tags$head(tags$style(type="areaText/css","#levelTerms {width: 1000px}")),
-                         textAreaInput("magTerms", label = paste0("Your terms for effect size ranges", intToUtf8(8194)), value = gsub("Delta", "\u394",magTerms),width=1000),
-                         textAreaInput("mag2Terms", label = "How you say no test is rejected",  value = mag2Terms,width="1000px"),
-                     ),
+                     conditionalPanel(condition = "input.newTerms == true",
+                          p("Use comma separated format, and follow the order of entries suggested in the boxes."),
+                          br(),
+                          div(style = "color:black; font-weight: 300;",
+                            textAreaInput("levelTerms", label = paste0("Your description of your test levels (max. 3)",intToUtf8(8194)),  value = levelTerms,width=1000),
+                            tags$head(tags$style(type="areaText/css","#levelTerms {width: 1000px}")),
+                            textAreaInput("magTerms", label = paste0("Your terms for effect size ranges", intToUtf8(8194)), value = gsub("Delta", "\u394",magTerms),width=1000),
+                            textAreaInput("mag2Terms", label = "How you say no test is rejected",  value = mag2Terms,width="1000px"),
+                        )),
                  )), 
       #'End set up Display tab.
+      #' #'Tab for sample size calculation phase
+      tabPanel("Sample size",h5(strong("Estimate minimum sample size to achieve desired power over all nominated tests.")),
+               p("A vertical line is shown at each estimated effect size. The color behind a point on the line shows the strongest test with sufficient power at that sample size. The legend is draggable."),
+               p("Draw a box in the chart and double click in it to zoom. Double click again to unzoom. Single click on chart to get co-ordinates.
+              Legend is draggable."),
+               sidebarLayout(
+                 
+                 #'Sample size sidebar offers tables to input desired tests/alpha levels and powers. 
+                 sidebarPanel(
+                   width = 3,
+                   div(style="margin-bottom:0px;flex:1;flex-wrap=wrap;color:black",
+                       strong("TABLE OF TESTS"),
+                       em(matrixInput("alpsS",value=inpAlphaSS,rows=list(names=T),cols=list(names=F))),
+                       p(em("Modify table to suit. Enter an asterisk (*) to conduct this test at this alpha level."), width="400px") ,
+                       br(),
+                       div(style = "flex:1;color:black", em(matrixInput("power",value=inpPower,rows=list(names=T),cols=list(names=F),class="numeric"))),
+                       p(em("For each test, enter desired power at that alpha level.", width="400px")) ),
+                   br(),
+                   
+                   #'Sample size sidebar also is where estimated effect size(s) and estimated variance are entered.
+                   textInput("ES", label = h5(paste0("One or more estimates of effect size, comma separated", intToUtf8(8194))),value="-.3,2.0 "),
+                   numericInput("var", label = h5(paste0("Estimated variance.", intToUtf8(8194))), value = 1),
+                 ),
+                 #'Sample size main panel is as for analysis phase, without optional CI display.The chart now shows rejection region THAT HAVE DESIRED POWER 
+                 mainPanel(width=9,
+                           div(style="width:350px;color:blue;",verbatimTextOutput("clickss1")),
+                           tags$head(tags$style("#'FigSS{cursor:default}")),
+                           plotOutput("FigSS", inline=T,  click = "plot_click", dblclick="plot_dclick",
+                                      brush=brushOpts(id="brush", resetOnNew=T)),
+                           absolutePanel(plotOutput("Legend1"),draggable=TRUE,top="510px"),
+                 ),
+               )), 
+      #' End sample size tab.
+      
         
-    #'Tab for study parameters and study data. 
-        tabPanel("Study design & data", h5(strong("Set up basic parameters of the study, and enter findings")),br(),
-                 div(style = "flex:1;flex-wrap; color: black",
-       
-        #' Can be one or two group design with possibly unequal groups.
-                     em(p("Enter 1 for a single group design or the larger group proportion for a 2 group design.")),
-                     numericInput("Study",label="",width = "100px",value = 0.5,min=.5,max=1,step=.1),
-                     br(),
-        
-        #' Sample size (or an estimate if calculating sample size, used in drawing regions)  
-                     em("Enter total trial sample size, or your initial estimate if computing sample size."),
-                     numericInput("sample", label = "",width="100px",value=40,step=10,min=4),
-                     br(),
-                     #' Checkbox to enter findings and a conditional panel to use to input.    
-                     checkboxInput("ESES",label = "Check to enter findings", value=F,width ="100%"),
-                     h5("Use comma separated format to enter the effect sizes and the standard errors. Your findings will be plotted as numbers in the order you entered them."),
-                     conditionalPanel(condition = "input.ESES == true",
-                                      textAreaInput("dataMean", label = "List of effect sizes", value = dataMean),br(),
-                                      textAreaInput("dataSE", label = "List of standard errors", value = dataSE)
-                     ),
-                 )), 
-        #'End study set up tab.
+         #'      #'Tab for analysis phase
+    tabPanel("Analysis",h5(strong("Plot findings against rejection regions of nominated tests or as confidence intervals.")),
+             p(" The color behind a finding corresponds to the decision about effect size shown in the legend. Click on chart to get point co-ordinates, plus the standard 95% confidence interval for a finding with
+                                    those co-ordinates. Draw a box in the chart and double click in it to zoom. Double click again to unzoom. Legend is draggable."),
+             sidebarLayout(
+               
+               #'Analysis sidebar offers a table to input desired tests and alpha levels. 
+               sidebarPanel(
+                 width = 3,
+                 strong(" TABLE OF TESTS"),
+                 em(matrixInput("alps",value=inpAlpha,rows=list(names=T),cols=list(names=F))),
+                 p(em("Modify table to suit. Enter an asterisk (*) to conduct test at given alpha level. 
+                      "),  width="400px") ,
+                 br(),
+                 #'Analysis sidebar also allow choice to display confidence intervals at multiple confidence levels about data points entered in Study tab        
+                 checkboxInput("drawCIs",label = h5("Check box to display findings as confidence intervals (CIs)."), value=F,width ="100%"),
+                 conditionalPanel(condition= "input.drawCIs==true",
+                      div(style="color:red;",p("Studies are labelled in order of data entry. For each study, CIs corresponding to different test levels are overlaid,
+                      with the longest CI corresponding to the most stringent test. The CI panel is draggable, and will be closed
+                     when the box is unchecked.")),
+               )),
+               
+               mainPanel(width=9,
+                         
+                         #'Analysis main panel optionally displays a draggable display of confidence intervals 
+                         jqui_draggable(
+                           conditionalPanel(condition = "input.drawCIs == true",plotOutput("CIs"),draggable=TRUE),
+                           option=list(cancel = ".shiny-input-container")),
+                         
+                         #'Analysis main panel  displays the co-ordinates of a point if the chart is clicked on
+                         #'The chart is displayed beneath this, with ability to draw a box and double click to zoom (hence chart is not draggable)
+                         div(style="width: 450px;",verbatimTextOutput("clickss")),
+                         tags$head(tags$style("#'clickss{color:blue;width:200px}")),
+                         tags$head(tags$style("#'Fig{cursor:default}")),
+                         plotOutput("Fig", inline=T,  click = "plot_click", dblclick="plot_dclick1",
+                                    brush=brushOpts(id="brush1", resetOnNew=T)),
+                         #'Legend is  a draggable panel
+                         absolutePanel(plotOutput("Legend"),draggable=TRUE,top="510px"),    
+                         
+               ),
+             )), 
+    #' End analysis tab.
       )))
 
 ###################################################################
@@ -240,8 +249,8 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
 #' set range variables for analysis and sample size charts
-  xmin0=-4;xmax0=4;ymin0=0; ymax0=4; ymin0SS=6;ymax0SS=100
-  xmin=-4;xmax=4;ymax=4;ymin=0;ymaxSS=100;yminSS=6
+  
+  xmin=xmin0;xmax=xmax0;ymax=ymax0;ymin=ymin0;ymaxSS=ymax0SS;yminSS=ymin0SS
   ranges <-reactiveValues()
   ranges$xmin=xmin; ranges$xmax=xmax;ranges$ymin=yminSS; ranges$ymax=ymaxSS
   ranges1 <-reactiveValues()
@@ -254,8 +263,8 @@ server <- function(input, output, session) {
   })
   
 #' Slider for entry of range of effect sizes equivalent to zero.
-  output$Slider <- renderUI({step=(xmax-xmin)/1000
-  sliderInput("LUX", "",min=xmin,max=xmax,value=c(-1,1),step=step,width="100%")})
+  output$Slider <- renderUI({step=max(1,as.integer((xmax-xmin)/10)) /100
+  sliderInput("LUX", "",min=xmin,max=xmax,value=c(-1,0),step=step,width="100%")})
   
 #' Chart for sample size computation.      
   output$FigSS <-
@@ -274,18 +283,20 @@ server <- function(input, output, session) {
           input$sample,input$var,
           input$LUX[1],input$LUX[2],
           ranges$xmin,ranges$xmax,ranges$ymin,ranges$ymax,
-          input$tab, input$Study,input$chartBW,
-          input$newTerms,input$magTerms,input$mag2Terms,input$levelTerms
+          input$tab, input$Study,input$chartBW
         )
       
     #' Update tables of tests and powers; also update the test table on the analysis tab.
+      if (!input$newTerms) dimnames=tests0
+       else dimnames= list(c(tests0[[1]][1],unlist(strsplit(input$magTerms,split=","))))
       if(length(param1)>0)updateMatrixInput(session, "alpsS", value =matrix(data=param1[1:18], nrow=6,ncol=3,dimnames=dimnames))
       if(length(param1)>0)updateMatrixInput(session=session, "alps", value=matrix(data=param1[1:18], nrow=6,ncol=3,dimnames=dimnames))
-      if(length(param1)>0)updateMatrixInput(session, "power", value =matrix(data=param1[19:33], nrow=5,ncol=3,dimnames=list( c( "E \u2265 L", "E \u2264 U", "E > U", "E < L","L \u2264 E \u2264 U"))))
+      if(length(param1)>0)updateMatrixInput(session, "power", value =matrix(data=param1[19:33], nrow=5,ncol=3,dimnames=list(dimnames[[1]][2:6])))
       
     #' Draw vertical lines through potential effect sizes.
+      col="red"; if (input$chartBW)col="black"
       if(!is.na(input$ES))
-        for(x in suppressWarnings(as.numeric(unlist(strsplit(input$ES,split=",")))))if (x<ranges$xmax) if (x>ranges$xmin)lines(c(x,x),param1[34:35],lwd=2)
+        for(x in suppressWarnings(as.numeric(unlist(strsplit(input$ES,split=",")))))if (x<ranges$xmax) if (x>ranges$xmin)lines(c(x,x),param1[34:35],lwd=2,col=col)
       
     #' Return co-ordinates of a point on click.
       output$clickss1 <- 
@@ -309,14 +320,18 @@ server <- function(input, output, session) {
   #'ANALYSIS PHASE OUTPUT 
   #'Draw the draggable legend.
   output$Legend1<- output$Legend <- renderPlot({
-       if(length(input$LUX[1]>0)) colorvec <<- drawLegendDrag(input$newTerms,input$magTerms,input$mag2Terms,
+       if(length(input$LUX[1]>0)) colorvec <<- drawLegendDrag(Labels0,input$newTerms,input$magTerms,input$mag2Terms,
           input$levelTerms, input$alps,0,1, 0,1,input$LUX[2]-input$LUX[1],input$chartBW)},height=400,width=400) 
   #' Optionally draw CIs.
-  output$CIs <- renderPlot({ if(length(input$dataMean)>0)if (length (input$LUX[1])>0)
-    drawCIs(input$dataMean, input$dataSE,input$LUX[1], input$LUX[2],as.numeric(input$alps[1,]),input$xmin,input$xmax,
+  
+  output$CIs <- renderPlot( if(length(input$dataMean)>0)
+    if (length (input$LUX[1])>0){
+    drawCIs(input$dataMean, input$dataV,input$VES,input$sample,input$Study,input$LUX[1], input$LUX[2],as.numeric(input$alps[1,]),input$xmin,input$xmax,
             input$sample, input$Study,input$chartBW,input$levelTerms,
             lab="effect size",legendPos="topleft")}
     ,height=400,width=400)
+ 
+  
   
   #' Draw the chart.  
   output$Fig <- renderPlot({
@@ -327,10 +342,11 @@ server <- function(input, output, session) {
       input$sample,0,
       input$LUX[1],input$LUX[2],
       ranges1$xmin,ranges1$xmax,ranges1$ymin, ranges1$ymax,
-      input$tab, input$Study,input$chartBW,
-      input$newTerms,input$magTerms,input$mag2Terms,input$levelTerms
+      input$tab, input$Study,input$chartBW
     )
     #' Update table of tests ; also update the test table on the sample size tab.
+     if(input$newTerms) dimnames=list(c(tests0[[1]][1],unlist(strsplit(input$magTerms,split=","))))
+      else dimnames=tests0
     if(length(param)>0) updateMatrixInput(session=session, "alps", value=matrix(data=param[1:18], nrow=6,ncol=3,dimnames=dimnames))
     if(length(param)>0) updateMatrixInput(session=session, "alpsS", value=matrix(data=param[1:18], nrow=6,ncol=3,dimnames=dimnames))
     
@@ -351,7 +367,7 @@ server <- function(input, output, session) {
     
     #' Display points representing study findings,           
     if(input$ESES)if(length(input$dataMean)>0)
-      datadisplay(input$dataMean, input$dataSE,input$chartBW,ranges1$xmin, ranges1$xmax, ranges1$ymin,ranges1$ymax)
+      datadisplay(input$dataMean, input$dataV,input$VES,input$sample,input$Study,input$chartBW,ranges1$xmin, ranges1$xmax, ranges1$ymin,ranges1$ymax)
  
   },height=500, width=500)
   #' Set chart plot dimensions at end of renderPlot for Analysis.
