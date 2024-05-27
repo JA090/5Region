@@ -1,4 +1,5 @@
 #'FUNCTION to draw legend and set up colors for regions for chart.
+#' @param LabelTest0 default labels in legend
 #' @param newTerms if TRUE, replace labels in legend with user input
 #' @param magTerms comma separated list of user terms to describe effectsizes
 #' @param mag2Terms  user terms to describe that none of the 4 tests is rejected
@@ -11,14 +12,14 @@
 #' @return Vector of colors (gray levels for b&w version). These cannot currently be changed by the user.
 #' @description FUNCTION to draw legend and set up colors for regions for chart.
 
-drawLegendDrag <- function(newTerms,magTerms,mag2Terms,levelTerms, alps,xmin, xmax, ymin,ymax,MM,chartBW)
+drawLegendDrag <- function(LabelsTest0,newTerms,magTerms,mag2Terms,levelTerms, alps,xmin, xmax, ymin,ymax,MM,chartBW)
 {
    #'legend goes on a dummy plot so it can be separately draggable from real chart
    plot(x=NA, y=NA,xlim=c(0,1),ylim=c(1,0),axes = FALSE,main ="", xlab="", ylab = "")
   
   #'record which tests are at which of the 3 possible levels  
   alphas<<-matrix(data=rep(NA,15),nrow=5,ncol=3)
-  for (j in 1:3) if(alps[1,j]<1) for (k in 1:5) if(alps[k+1,j]=="Y")
+  for (j in 1:3) if(alps[1,j]<1) for (k in 1:5) if(alps[k+1,j]=="*")
                 alphas[k,j] =as.numeric(alps[1,j])
   
   #' Set vector of colors for inferiority, superiority and equivalence regions according to whether black and white option selected.
@@ -50,16 +51,16 @@ drawLegendDrag <- function(newTerms,magTerms,mag2Terms,levelTerms, alps,xmin, xm
     LabelsTest =c(unlist(strsplit(magTerms,split=",")),mag2Terms)
     LabelsTest=sub("Delta","\u394",LabelsTest)
   } else 
-    LabelsTest=c(expression(paste("inferior (reject ", italic("E \u2265 L)"))), expression(paste("superior (reject ", italic("E \u2264 U)"))),
-                 expression(paste("non-superior (reject ", italic("E > U)"))),
-                 expression(paste("non-inferior (reject ",italic("E < L)"))),expression(paste("equivalence (reject both ", italic("E > U & E < L)"))), "inconclusive (reject nothing)")
+    LabelsTest=LabelsTest0
   
   #' For each of the one-sided get labels and colors for tests that will actually be conducted. 
-  for (k in 1:5) { # for each test
+
+ for (k in 1:5) { # for each test
     i=1
     for (j in 1:3) { # for each potential test level
       testCon=!is.na(alphas[k,j])
-      if (k==5) testCon=testCon &&!is.na(alphas[4,j]) && !is.na(alphas[3,j])  #for equivalence require that non-inferiority and non-superiority tests are also conducted at any level.
+   
+     # if (k==5) testCon=testCon &&!is.na(alphas[4,j]) && !is.na(alphas[3,j])  #for equivalence require that non-inferiority and non-superiority tests are also conducted at any level.
       if (testCon){
         if (flag) 
           Labels[i,k] = LabelNames[j]
@@ -71,7 +72,6 @@ drawLegendDrag <- function(newTerms,magTerms,mag2Terms,levelTerms, alps,xmin, xm
          }
     len[k]=i-1
   }
-
  
   #' Finally ready to write out legends.
   legSize = 1 #set legend size
@@ -90,6 +90,7 @@ drawLegendDrag <- function(newTerms,magTerms,mag2Terms,levelTerms, alps,xmin, xm
         border=colcol[1:len[k],k],
         legend=Labels[1:len[k],k],
         cex = legSize,bty = "n" )
+    
     # overlay inferiority with hatch if B&W chart
     if (k ==1) if (chartBW) legend(
       x=x,y=s0,ncol=3,
